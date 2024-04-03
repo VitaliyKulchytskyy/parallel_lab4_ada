@@ -20,6 +20,7 @@ package Philosopher is
     end record;
 
     function Image (phil : in Philosopher) return String;
+    function Get_Name (phil: in Philosopher) return String;
 
 private
     Id              : Integer := 1;

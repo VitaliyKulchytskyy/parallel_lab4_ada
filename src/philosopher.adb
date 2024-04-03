@@ -10,11 +10,13 @@ package body Philosopher is
            Translate
               (To_Unbounded_String (States'Image (phil.State)),
                Ada.Strings.Maps.Constants.Lower_Case_Map);
-        return
-           "P" & Ada.Strings.Fixed.Trim (phil.Id'Img, Ada.Strings.Left) &
-           " is " & To_String (S) & ". Left hand fork id:" &
-           phil.Left_Fork_Id'Img & ". Right hand fork id:" & phil.Right_Fork_Id'Img;
+        return Get_Name(phil) & " is " & To_String (S);
     end Image;
+
+    function Get_Name (phil: in Philosopher) return String is
+    begin
+        return "P" & Ada.Strings.Fixed.Trim (phil.Id'Img, Ada.Strings.Left);
+    end Get_Name;
 
     function IncPhilosopherId return Integer is
     begin
