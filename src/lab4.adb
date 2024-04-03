@@ -8,6 +8,7 @@ with Ada.Containers;        use Ada.Containers;
 procedure Lab4 is
     Ph : array (1 .. Philosopher.GetPhilosopherNum) of aliased Philosopher.Philosopher;
     Forks : array (1 .. Philosopher.GetPhilosopherNum) of Counting_Semaphore(1, Default_Ceiling);
+    Waiter: Counting_Semaphore(2, Default_Ceiling);
     
     function Left (Id: Integer) return Integer is
     begin
@@ -20,43 +21,24 @@ procedure Lab4 is
         return (Id rem Philosopher.GetPhilosopherNum) + 1;
     end Right;
     pragma Inline (Right);
-
-   
-    protected Host is
-        entry Greet;
-        procedure Farewell;
-    private
-        Guests : Integer := 0;
-    end Host;
     
-    protected body Host is
-        entry Greet when Guests < Philosopher.GetPhilosopherNum is
-        begin
-             Guests := Guests + 1;
-        end Greet;
-        procedure Farewell is
-        begin
-            Guests := Guests - 1;
-        end Farewell;
-    end Host;
-
     task type Philosopher_Parallel (Id: Integer);
     task body Philosopher_Parallel is
     begin
-          for Life_Cycle in 1..10 loop
-             Put_Line (Id'Image & " is thinking");
-             delay 0.20; 
-             Put_Line (Id'Image & " is hungry");
-             Host.Greet;
-             Forks(Left(Id)).Seize;
-             Forks(Right(Id)).Seize;
-             Put_Line (Id'Image & " is eating");
-             delay 0.20; 
-             Forks(Left(Id)).Release;
-             Forks(Right(Id)).Release;
-             Host.Farewell;
-          end loop;
-          Put_Line (ID'Image & " is leaving");
+        for Life_Cycle in 1..10 loop
+            Put_Line (Id'Image & " is thinking");
+            delay 0.20; 
+            Put_Line (Id'Image & " is hungry");
+            Waiter.Seize;
+            Forks(Left(Id)).Seize;
+            Forks(Right(Id)).Seize;
+            Put_Line (Id'Image & " is eating");
+            delay 0.20; 
+            Forks(Left(Id)).Release;
+            Forks(Right(Id)).Release;
+            Waiter.Release;
+        end loop;
+        Put_Line (ID'Image & " is leaving");
     end Philosopher_Parallel;
 
     Ph1: Philosopher_Parallel(1);
