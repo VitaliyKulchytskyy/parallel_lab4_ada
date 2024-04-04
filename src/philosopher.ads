@@ -5,7 +5,7 @@ with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 package Philosopher is
     pragma Elaborate_Body;
 
-    type States is (Eating, Hungry, Thinking);
+    type States is (Thinking, Hungry, Eating);
 
     function IncPhilosopherId return Integer;
     function GetLastPhilosopherId return Integer;

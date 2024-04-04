@@ -6,106 +6,105 @@ with GNAT.Semaphores;       use GNAT.Semaphores;
 with Ada.Containers;        use Ada.Containers;
 
 procedure Lab4 is
-    Forks :
+    Forks       :
        array
-          (1 .. Philosopher.GetPhilosopherNum) of Counting_Semaphore (1, Default_Ceiling);
-    Waiter : Counting_Semaphore(0, Default_Ceiling); 
+          (1 ..
+                 Philosopher.GetPhilosopherNum) of Counting_Semaphore
+          (1, Default_Ceiling);
+    -- Waiter : Counting_Semaphore(2, Default_Ceiling);
     Phil_States : array (1 .. 5) of Philosopher.States;
 
     protected State is
-        procedure Set (Id: Integer; S: Philosopher.States);
-        function Get (Id: Integer) return Philosopher.States;
+        procedure Set (Id : Integer; S : Philosopher.States);
+        function Get (Id : Integer) return Philosopher.States;
     end State;
 
-    protected body State is 
-        procedure Set (Id: Integer; S: Philosopher.States) is
+    protected body State is
+        procedure Set (Id : Integer; S : Philosopher.States) is
         begin
-            Phil_States(Id) := S;
+            Phil_States (Id) := S;
         end Set;
 
-        function Get (Id: Integer) return Philosopher.States is
+        function Get (Id : Integer) return Philosopher.States is
         begin
-            return Phil_States(Id);
+            return Phil_States (Id);
         end Get;
     end State;
 
-    function Left (Id: Integer) return Integer is
+    function Left (Id : Integer) return Integer is
     begin
         return (Id) rem Philosopher.GetPhilosopherNum;
     end Left;
     pragma Inline (Left);
 
-    function Right (Id: Integer) return Integer is
+    function Right (Id : Integer) return Integer is
     begin
         return (Id rem Philosopher.GetPhilosopherNum) + 1;
     end Right;
     pragma Inline (Right);
 
-    procedure Test (Phil : out Philosopher.Philosopher) is
-        Id : Integer := Phil.Id;
+    procedure Test (Id : Integer) is
     begin
-        if State.Get(Id) = Hungry and State.Get(Left(Id)) /= Eating and State.Get(Right(Id)) /= Eating then
-            State.Set(Id, Eating);
-            Forks(Id).Release;
+        if  State.Get (Id) = Hungry and 
+            State.Get (Left (Id)) /= Eating and
+            State.Get (Right (Id)) /= Eating
+        then
+            State.Set (Id, Eating);
+            Put_Line (Id'Image & " eating");
+            Forks (Id).Release;
+            Forks (Right (Id)).Release;
         end if;
     end Test;
 
-    procedure Philosopher_Thinking (Phil: out Philosopher.Philosopher; Delay_Sec: Duration := 0.5) is
+    procedure Philosopher_Thinking (Id : Integer; Delay_Sec : Duration := 0.2)
+    is
     begin
-        State.Set(Phil.Id, Thinking);
-        Put_Line (Philosopher.Image(Phil));
+        State.Set (Id, Thinking);
+        -- Put_Line (Philosopher.Image(Phil));
+        Put_Line (Id'Image & " thinking");
         delay Delay_Sec;
     end Philosopher_Thinking;
-    
-    procedure Philosopher_Take_Fork (Phil: out Philosopher.Philosopher) is
+
+    procedure Philosopher_Take_Fork (Id : Integer) is
     begin
-       Waiter.Seize; 
-       State.Set(Phil.Id, Hungry);
-       Test(Phil);
-       Waiter.Release;
-       Forks(Phil.Id).Seize;
+        State.Set (Id, Hungry);
+        Test (Id);
+        Forks (Id).Seize;
+        Forks (Right (Id)).Seize;
     end Philosopher_Take_Fork;
 
-    procedure Philosopher_Put_Fork (Phil: Philosopher.Philosopher) is
+    procedure Philosopher_Put_Fork (Id : Integer) is
     begin
-        Waiter.Seize;
-        State.Set(Phil.Id, Thinking);
-        Test(Ph(Left(Phil.Id)));
-        Test(Ph(Right(Phil.Id)));
-        Waiter.Release;
+        State.Set (Id, Thinking);
+        Test (Left (Id));
+        Test (Right (Id));
     end Philosopher_Put_Fork;
 
-    procedure Philiospher_Diner (Phil: out Philosopher.Philosopher; Eating_Sec: Duration := 1.0) is
+    procedure Philiospher_Diner (Id : Integer; Eating_Sec : Duration := 0.2) is
     begin
-        Philosopher_Thinking (Phil);
-        Philosopher_Take_Fork (Phil); 
-        Put_Line (Philosopher.Image(Phil));
+        Philosopher_Thinking (Id);
+        Philosopher_Take_Fork (Id);
         delay Eating_Sec;
-        Philosopher_Put_Fork (Phil);
+        Philosopher_Put_Fork (Id);
     end Philiospher_Diner;
-    
-    task type Philosopher_Handler is 
-        entry Start(Phil: Philosopher.Philosopher);
-    end Philosopher_Handler;
 
-    task body Philosopher_Handler is
-        Phil: Philosopher.Philosopher;
+    task type Philosopher_Parallel (Id : Integer);
+    task body Philosopher_Parallel is
     begin
-        accept Start (Phil: Philosopher.Philosopher) do
-            Philosopher_Handler.Phil := Phil;
-        end Start;
-        
-        -- for I in 1 .. 10 loop    
-            Philiospher_Diner (Philosopher_Handler.Phil);
-        -- end loop;
-    end Philosopher_Handler;
+        for Life_Cycle in 1 .. 10 loop
+            Philiospher_Diner (Id, 0.5);
+        end loop;
+        Put_Line (Id'Image & " is leaving");
+    end Philosopher_Parallel;
 
-    Philosopher_Parallel: array (1 .. Philosopher.GetPhilosopherNum) of Philosopher_Handler;
+    Ph1 : Philosopher_Parallel (1);
+    Ph2 : Philosopher_Parallel (2);
+    Ph3 : Philosopher_Parallel (3);
+    Ph4 : Philosopher_Parallel (4);
+    Ph5 : Philosopher_Parallel (5);
+
 begin
-    for I in Philosopher_Parallel'Range loop
-        -- Ph(I).State := Hungry;
-        Philosopher_Parallel(I).Start (Ph(I));
-    end loop;
+    null;
 
 exception
     when e : Constraint_Error =>
